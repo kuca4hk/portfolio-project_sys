@@ -1,0 +1,33 @@
+version: "3"
+services:
+  db:
+    image: "postgres:13.3"
+    environment:
+      - POSTGRES_USER=back
+      - POSTGRES_PASSWORD=back
+      - POSTGRES_DB=back
+    volumes:
+      - backpg:/var/lib/postgresql/data
+    ports:
+      - "15432:5432"
+  web:
+    build: .
+    command: ["sh", "-c", "scripts/run_server.sh 1"]
+    healthcheck:
+      test: "curl -fsSL http://0.0.0.0:8000/healthcheck/ || exit 1"
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    env_file:
+      - .env
+    environment:
+      DB_URL: 'postgresql://registry-office:registry-office@db:5432/registry-office'
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+volumes:
+  backpg:
