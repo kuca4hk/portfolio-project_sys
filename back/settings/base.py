@@ -194,3 +194,37 @@ SWAGGER_SETTINGS = {
 }
 
 SWAGGER_URL = config("SWAGGER_URL", default=BASE_URL + "v1/api/")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        'file': {
+            'level': "INFO",
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django-info.log',
+        },
+        'file_error': {
+            'level': "ERROR",
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django-error.log',
+        }
+    },
+    "loggers": {
+        'django': {
+            'handlers': ['file'],
+            'level': "INFO",
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['file_error'],
+            'level': "ERROR",
+            'propagate': True,
+        },
+        'logging_app': {
+            'handlers': ['file'],
+            'level': "INFO",
+            'propagate': True,
+        },
+    },
+}

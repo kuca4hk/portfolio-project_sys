@@ -7,7 +7,9 @@ from .views import (
     get_courses_by_category,
     create_course,
     update_course,
-    users_course_registry
+    users_course_registry,
+    get_course_created_by_user,
+    get_users_courses
 )
 
 
@@ -23,6 +25,9 @@ urlpatterns = [
     path("create-course/", create_course, name="create-course"),
     path("update-course/<int:id>/", update_course, name="update-course"),
     path("users-course-registry/<int:id>/", users_course_registry, name="users-course-registry"),
+    path("<int:id>/courses-created-by-user/", get_course_created_by_user, name="courses-created-by-user"),
+    path("users-course-registry/", users_course_registry, name="users-course-registry"),
+    path("my-courses-registration/",get_users_courses , name="my-courses")
 ]
 
 urlpatterns += router.urls

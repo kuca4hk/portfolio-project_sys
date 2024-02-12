@@ -26,6 +26,11 @@ class UserLoginView(APIView):
         email = request.user.email
         password = request.user.password
 
+
+        if password == "":
+            return Response(
+                {"error": "Password is empty please enter a value"}, status=status.HTTP_401_UNAUTHORIZED
+            )
         try:
             user = CustomUser.objects.get(email=email)
         except CustomUser.DoesNotExist:
@@ -51,7 +56,7 @@ class UserLoginView(APIView):
 @permission_classes([IsAuthenticated])
 def get_user_information(request, id):
     user = request.user
-    if user:
+    if user.id == id:
         name = CustomUser.objects.get(pk=id)
         serializer = UserSerializer(name)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -90,8 +95,11 @@ def change_password(request):
     user = CustomUser.objects.get(pk=user.id)
     if user:
         # Získání nového hesla z POST requestu
-
         new_password = request.data.get("new_password")
+        if new_password == "":
+            return Response(
+                {"error": "Password is empty please enter a value"}, status=status.HTTP_401_UNAUTHORIZED
+            )
         if user.check_password(new_password):
             return Response(
                 "New password can't be the same as old password.",

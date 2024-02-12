@@ -16,6 +16,8 @@ from .serializers import (
     CategorySerializer,
     CourseDetailSerializer,
     CourseUpdateSerializer,
+    CourseCreateSerializer,
+    CourseUserSerializer,
 )
 
 from ..users.models import CustomUser
@@ -26,7 +28,8 @@ from ..users.models import CustomUser
 @permission_classes([IsAuthenticated])
 def get_courses(request):
     courses = Course.objects.all()
-    serializer = CourseSerializer(courses, many=True)
+    courses_active = courses.filter(is_active=True)
+    serializer = CourseSerializer(courses_active, many=True)
     return Response(serializer.data)
 
 
@@ -69,32 +72,68 @@ def get_courses_by_category(request, id):
         )
 
 
-@api_view(["POST"])
+@api_view(["POST", 'PUT'])
 @authentication_classes([BasicAuthentication])
 @permission_classes([IsAuthenticated])
 def create_course(request):
-    serializer = CourseSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Course created"}, status=status.HTTP_201_CREATED)
-    else:
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    if request.method == "POST":
+        serializer = CourseCreateSerializer(data=request.data)
+        id_category = []
+        for category in request.data['category']:
+            cat = Category.objects.get(name=category)
+            id_category.append(cat.id)
+        request.data['category'] = id_category
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Course created"}, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == "PUT":
+        course = Course.objects.get(pk=request.data['id'])
+        serializer = CourseCreateSerializer(course, data=request.data)
+        id_category = []
+        for category in request.data['category']:
+            cat = Category.objects.get(name=category)
+            id_category.append(cat.id)
+        request.data['category'] = id_category
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Course created"}, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(["POST"])
+@api_view(["POST", "PUT"])
 @authentication_classes([BasicAuthentication])
 @permission_classes([IsAuthenticated])
 def users_course_registry(request, id):
     course = Course.objects.get(pk=id)
     if course:
-        course.users.add(request.user)
-        return Response(
-            {"message": "User registered to course"}, status=status.HTTP_200_OK
-        )
+        if request.method == "POST":
+            course.users.add(request.user)
+            return Response(
+                {"message": "User registered to course"}, status=status.HTTP_200_OK
+            )
+        elif request.method == "PUT":
+            course.users.remove(request.user)
+            return Response(
+                {"message": "User unregistered from course"}, status=status.HTTP_200_OK
+            )
     else:
         return Response(
             {"error": "Course does not exist"}, status=status.HTTP_404_NOT_FOUND
         )
+
+
+@api_view(["GET"])
+@authentication_classes([BasicAuthentication])
+@permission_classes([IsAuthenticated])
+def get_users_courses(request):
+    user = request.user
+    user = CustomUser.objects.get(email=user.email)
+    courses = Course.objects.filter(users=user)
+    serializer = CourseSerializer(courses, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(["PUT"])
@@ -123,3 +162,19 @@ def update_course(request, id):
             return Response(
                 {"error": "Course does not exist"}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+@api_view(["GET"])
+@authentication_classes([BasicAuthentication])
+@permission_classes([IsAuthenticated])
+def get_course_created_by_user(request, id):
+    user = request.user
+    user = CustomUser.objects.get(id=id)
+    courses = Course.objects.filter(created_by=user.id)
+    if courses:
+        serializer = CourseSerializer(courses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        return Response(
+            {"error": "Courses do not exist"}, status=status.HTTP_404_NOT_FOUND
+        )
